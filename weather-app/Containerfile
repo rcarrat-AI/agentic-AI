@@ -1,0 +1,46 @@
+# Use the official Red Hat UBI 9 Python 3.9 image as the base image
+FROM registry.access.redhat.com/ubi9/python-39 as base
+
+# Use root user for system updates
+USER 0
+
+# Update system packages
+RUN yum -y update --setopt=tsflags=nodocs && \
+  yum clean all
+
+# Builder stage for setting up the environment and building the project
+FROM base as builder
+
+# Use root user in builder stage
+USER 0
+
+# Copy the application code to the container with appropriate ownership
+COPY --chown=1001:0 . /tmp/src/
+
+# Set the working directory
+WORKDIR /tmp/src
+
+# Install Python dependencies
+RUN pip install --no-cache-dir --upgrade pip && \
+  pip install --no-cache-dir -r /tmp/src/requirements.txt
+
+# Final stage to run the application as a non-root user
+FROM base as final
+
+# Switch to non-root user
+USER 1001
+
+# Copy the built application code and specific files from the builder stage
+COPY --from=builder --chown=1001:0 /tmp/src /opt/app-root/src/
+COPY --from=builder --chown=1001:0 /tmp/src/favicon.ico /opt/app-root/src/
+COPY --from=builder --chown=1001:0 /tmp/src/app.py /opt/app-root/src/
+COPY --from=builder --chown=1001:0 /tmp/src/weather_fetcher.py /opt/app-root/src/
+
+# Set the final working directory
+WORKDIR /opt/app-root/src
+
+# Expose the port the app runs on
+EXPOSE 8000
+
+# Command to run the FastAPI application using Uvicorn
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

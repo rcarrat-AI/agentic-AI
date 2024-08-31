@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+requests
+requests-cache
+retry-requests
+pandas
