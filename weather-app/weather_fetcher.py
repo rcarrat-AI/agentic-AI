@@ -7,7 +7,7 @@ import requests
 class WeatherFetcher:
     def __init__(self, cache_expire=3600, retries=5, backoff_factor=0.2):
         # Setup the Open-Meteo API client with cache and retry on error
-        cache_session = requests_cache.CachedSession('.cache', expire_after=cache_expire)
+        cache_session = requests_cache.CachedSession('/tmp/.cache', expire_after=cache_expire)
         retry_session = retry(cache_session, retries=retries, backoff_factor=0.2)
         self.openmeteo = openmeteo_requests.Client(session=retry_session)
         self.url = "https://api.open-meteo.com/v1/forecast"
